@@ -2,27 +2,143 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>I miei dati CSV</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Report Commesse e Risorse</title>
   <script src="https://cloudflare.com"></script>
   <script src="https://jsdelivr.net"></script>
   <style>
-    body { font-family: system-ui, sans-serif; max-width: 1100px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; color: #222; }
-    #readme { background: #f8f9fa; padding: 1.5rem; border-radius: 8px; border: 1px solid #e1e4e8; margin-bottom: 2.5rem; }
-    h2.csv-title { margin-top: 2.5rem; border-bottom: 2px solid #0969da; padding-bottom: 0.3rem; color: #0969da; }
-    .table-container { overflow-x: auto; max-height: 450px; border: 1px solid #d0d7de; border-radius: 6px; margin-bottom: 2rem; }
-    table { border-collapse: collapse; width: 100%; font-size: 14px; }
-    th, td { border: 1px solid #d0d7de; padding: 8px 12px; text-align: left; }
-    th { background-color: #f6f8fa; position: sticky; top: 0; font-weight: 600; }
-    tr:nth-child(even) { background-color: #f9fbfd; }
-    .status { color: #666; font-style: italic; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      max-width: 1200px;
+      margin: 2rem auto;
+      padding: 0 1.2rem;
+      line-height: 1.5;
+      color: #1f2328;
+      background-color: #ffffff;
+    }
+    #readme {
+      background: #f6f8fa;
+      padding: 1.5rem 2rem;
+      border-radius: 8px;
+      border: 1px solid #d0d7de;
+      margin-bottom: 2rem;
+    }
+    .nav-box {
+      background: #eef6ff;
+      border: 1px solid #b6d4fe;
+      padding: 1rem 1.5rem;
+      border-radius: 8px;
+      margin-bottom: 2.5rem;
+    }
+    .nav-box strong {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: #084298;
+    }
+    .nav-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+    }
+    .nav-links a {
+      text-decoration: none;
+      background: #ffffff;
+      color: #0969da;
+      border: 1px solid #0969da;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .nav-links a:hover {
+      background: #0969da;
+      color: #ffffff;
+    }
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 3rem;
+      border-bottom: 2px solid #0969da;
+      padding-bottom: 0.4rem;
+    }
+    .section-header h2 {
+      margin: 0;
+      color: #0969da;
+      font-size: 1.35rem;
+    }
+    .download-btn {
+      font-size: 13px;
+      text-decoration: none;
+      color: #24292f;
+      background: #f6f8fa;
+      border: 1px solid #d0d7de;
+      padding: 5px 10px;
+      border-radius: 6px;
+    }
+    .download-btn:hover {
+      background: #ebeff3;
+    }
+    .table-container {
+      overflow-x: auto;
+      max-height: 480px;
+      border: 1px solid #d0d7de;
+      border-radius: 6px;
+      margin-top: 0.8rem;
+      margin-bottom: 2rem;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+    th, td {
+      border: 1px solid #d0d7de;
+      padding: 8px 12px;
+      text-align: left;
+    }
+    th {
+      background-color: #f6f8fa;
+      position: sticky;
+      top: 0;
+      font-weight: 600;
+      z-index: 1;
+    }
+    tr:nth-child(even) {
+      background-color: #f9fbfd;
+    }
+    tr:hover {
+      background-color: #f0f6fc;
+    }
+    .error {
+      color: #b91c1c;
+      font-weight: 600;
+      padding: 1rem;
+    }
   </style>
 </head>
 <body>
 
   <div id="readme">Caricamento descrizione...</div>
-  <div id="tables-wrapper"><p class="status">Ricerca dei file CSV nel repository in corso...</p></div>
+
+  <div class="nav-box">
+    <strong>Indice tabelle:</strong>
+    <div class="nav-links" id="navLinks"></div>
+  </div>
+
+  <div id="tables-wrapper"></div>
 
   <script>
+    const csvFiles = new Array(
+      "01_Anagrafica_Commesse.csv",
+      "02_Piano_Economico_Mensile.csv",
+      "03_Consuntivi_Mensili.csv",
+      "04_Anagrafica_Risorse.csv",
+      "05_Allocazione_Risorse.csv",
+      "06_Rischi_CR.csv"
+    );
+
     // 1. Mostra il README.md
     fetch('README.md')
       .then(res => res.ok ? res.text() : '')
@@ -31,74 +147,88 @@
         else document.getElementById('readme').style.display = 'none';
       });
 
-    // 2. Ricava utente e nome repository dall'URL di GitHub Pages
-    const hostParts = window.location.hostname.split('.');
-    const owner = hostParts[0];
-    const pathParts = window.location.pathname.split('/').filter(Boolean);
-    const repo = pathParts.length > 0 ? pathParts[0] : `${owner}.github.io`;
+    // 2. Genera indice e tabelle
+    const wrapper = document.getElementById('tables-wrapper');
+    const navLinks = document.getElementById('navLinks');
 
-    // 3. Chiede a GitHub l'elenco dei file presenti nel repository
-    fetch(`https://github.com{owner}/${repo}/contents/`)
-      .then(res => res.json())
-      .then(items => {
-        const wrapper = document.getElementById('tables-wrapper');
-        wrapper.innerHTML = '';
+    csvFiles.forEach((filename, index) => {
+      // Trasforma "01_Anagrafica_Commesse.csv" in "01. Anagrafica Commesse"
+      const cleanTitle = filename
+        .replace(/\.csv$/i, '')
+        .replace(/^(\d+)_/, '$1. ')
+        .replace(/_/g, ' ');
 
-        // Filtra solo i file che finiscono con .csv (ignora maiuscole/minuscole)
-        const csvFiles = items.filter(item => item.name.toLowerCase().endsWith('.csv'));
+      const sectionId = 'table-' + index;
 
-        if (csvFiles.length === 0) {
-          wrapper.innerHTML = '<p>Nessun file CSV trovato nella cartella principale del repository.</p>';
-          return;
-        }
+      // Aggiunge voce all'indice in alto
+      const link = document.createElement('a');
+      link.href = '#' + sectionId;
+      link.textContent = cleanTitle;
+      navLinks.appendChild(link);
 
-        // Crea una sezione e una tabella per ciascun CSV trovato
-        csvFiles.forEach(file => {
-          const title = document.createElement('h2');
-          title.className = 'csv-title';
-          title.textContent = file.name;
-          wrapper.appendChild(title);
+      // Intestazione sezione con titolo e tasto download
+      const header = document.createElement('div');
+      header.className = 'section-header';
+      header.id = sectionId;
 
-          const container = document.createElement('div');
-          container.className = 'table-container';
-          const table = document.createElement('table');
-          container.appendChild(table);
-          wrapper.appendChild(container);
+      const title = document.createElement('h2');
+      title.textContent = cleanTitle;
+      header.appendChild(title);
 
-          Papa.parse(file.name, {
-            download: true,
-            header: true,
-            delimiter: ";",
-            encoding: "ISO-8859-1",
-            skipEmptyLines: true,
-            complete: function(results) {
-              if (!results.data || results.data.length === 0) return;
+      const dlBtn = document.createElement('a');
+      dlBtn.className = 'download-btn';
+      dlBtn.href = encodeURI(filename);
+      dlBtn.download = filename;
+      dlBtn.textContent = 'Scarica CSV';
+      header.appendChild(dlBtn);
 
-              const headers = Object.keys(results.data[0]);
-              const thead = table.createTHead();
-              const headerRow = thead.insertRow();
-              headers.forEach(h => {
-                const th = document.createElement('th');
-                th.textContent = h;
-                headerRow.appendChild(th);
-              });
+      wrapper.appendChild(header);
 
-              const tbody = table.createTBody();
-              results.data.forEach(row => {
-                const tr = tbody.insertRow();
-                headers.forEach(h => {
-                  const td = tr.insertCell();
-                  td.textContent = row[h];
-                });
-              });
-            }
+      // Contenitore tabella
+      const container = document.createElement('div');
+      container.className = 'table-container';
+      const table = document.createElement('table');
+      container.appendChild(table);
+      wrapper.appendChild(container);
+
+      // Lettura CSV (delimitato da punto e virgola di Excel)
+      Papa.parse(encodeURI(filename), {
+        download: true,
+        header: true,
+        delimiter: ";",
+        encoding: "ISO-8859-1",
+        skipEmptyLines: true,
+        error: function() {
+          container.innerHTML = '<p class="error">Impossibile caricare "' + filename + '". Verifica che sia nella stessa cartella di index.html.</p>';
+        },
+        complete: function(results) {
+          if (!results.data || results.data.length === 0) {
+            container.innerHTML = '<p style="padding:1rem;">Nessun dato trovato nel file.</p>';
+            return;
+          }
+
+          const firstRow = results.data.at(0);
+          const headers = Object.keys(firstRow);
+
+          const thead = table.createTHead();
+          const headerRow = thead.insertRow();
+          headers.forEach(h => {
+            const th = document.createElement('th');
+            th.textContent = h;
+            headerRow.appendChild(th);
           });
-        });
-      })
-      .catch(err => {
-        document.getElementById('tables-wrapper').innerHTML = 
-          '<p>Impossibile caricare la lista dei file (verifica che il repository sia pubblico).</p>';
+
+          const tbody = table.createTBody();
+          results.data.forEach(row => {
+            const tr = tbody.insertRow();
+            headers.forEach(h => {
+              const td = tr.insertCell();
+              td.textContent = row[h] !== undefined ? row[h] : '';
+            });
+          });
+        }
       });
+    });
   </script>
 </body>
 </html>
