@@ -2,232 +2,94 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Report Commesse e Risorse</title>
-  <script src="https://cloudflare.com"></script>
-  <script src="https://jsdelivr.net"></script>
   <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      max-width: 1200px;
-      margin: 2rem auto;
-      padding: 0 1.2rem;
-      line-height: 1.5;
-      color: #1f2328;
-      background-color: #ffffff;
-    }
-    #readme {
-      background: #f6f8fa;
-      padding: 1.5rem 2rem;
-      border-radius: 8px;
-      border: 1px solid #d0d7de;
-      margin-bottom: 2rem;
-    }
-    .nav-box {
-      background: #eef6ff;
-      border: 1px solid #b6d4fe;
-      padding: 1rem 1.5rem;
-      border-radius: 8px;
-      margin-bottom: 2.5rem;
-    }
-    .nav-box strong {
-      display: block;
-      margin-bottom: 0.5rem;
-      color: #084298;
-    }
-    .nav-links {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.6rem;
-    }
-    .nav-links a {
-      text-decoration: none;
-      background: #ffffff;
-      color: #0969da;
-      border: 1px solid #0969da;
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 14px;
-      font-weight: 500;
-    }
-    .nav-links a:hover {
-      background: #0969da;
-      color: #ffffff;
-    }
-    .section-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 3rem;
-      border-bottom: 2px solid #0969da;
-      padding-bottom: 0.4rem;
-    }
-    .section-header h2 {
-      margin: 0;
-      color: #0969da;
-      font-size: 1.35rem;
-    }
-    .download-btn {
-      font-size: 13px;
-      text-decoration: none;
-      color: #24292f;
-      background: #f6f8fa;
-      border: 1px solid #d0d7de;
-      padding: 5px 10px;
-      border-radius: 6px;
-    }
-    .download-btn:hover {
-      background: #ebeff3;
-    }
-    .table-container {
-      overflow-x: auto;
-      max-height: 480px;
-      border: 1px solid #d0d7de;
-      border-radius: 6px;
-      margin-top: 0.8rem;
-      margin-bottom: 2rem;
-    }
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      font-size: 14px;
-      white-space: nowrap;
-    }
-    th, td {
-      border: 1px solid #d0d7de;
-      padding: 8px 12px;
-      text-align: left;
-    }
-    th {
-      background-color: #f6f8fa;
-      position: sticky;
-      top: 0;
-      font-weight: 600;
-      z-index: 1;
-    }
-    tr:nth-child(even) {
-      background-color: #f9fbfd;
-    }
-    tr:hover {
-      background-color: #f0f6fc;
-    }
-    .error {
-      color: #b91c1c;
-      font-weight: 600;
-      padding: 1rem;
-    }
+    body { font-family: Arial, sans-serif; max-width: 1100px; margin: 20px auto; padding: 0 15px; color: #222; }
+    #readme { background: #f4f4f4; padding: 15px; border-radius: 6px; margin-bottom: 30px; white-space: pre-wrap; }
+    h2 { color: #0969da; border-bottom: 2px solid #0969da; padding-bottom: 5px; margin-top: 35px; }
+    .box { overflow-x: auto; max-height: 400px; border: 1px solid #ccc; }
+    table { border-collapse: collapse; width: 100%; font-size: 14px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; white-space: nowrap; }
+    th { background: #eee; position: sticky; top: 0; }
+    tr:nth-child(even) { background: #f9f9f9; }
   </style>
 </head>
 <body>
 
-  <div id="readme">Caricamento descrizione...</div>
-
-  <div class="nav-box">
-    <strong>Indice tabelle:</strong>
-    <div class="nav-links" id="navLinks"></div>
-  </div>
-
-  <div id="tables-wrapper"></div>
+  <div id="readme">Caricamento README...</div>
+  <div id="contenuto"></div>
 
   <script>
-    const csvFiles = new Array(
+    const files = [
       "01_Anagrafica_Commesse.csv",
       "02_Piano_Economico_Mensile.csv",
       "03_Consuntivi_Mensili.csv",
       "04_Anagrafica_Risorse.csv",
       "05_Allocazione_Risorse.csv",
       "06_Rischi_CR.csv"
-    );
+    ];
 
-    // 1. Mostra il README.md
-    fetch('README.md')
-      .then(res => res.ok ? res.text() : '')
-      .then(md => {
-        if (md) document.getElementById('readme').innerHTML = marked.parse(md);
-        else document.getElementById('readme').style.display = 'none';
+    // 1. Carica il README
+    fetch("README.md")
+      .then(r => r.ok ? r.text() : "")
+      .then(testo => {
+        document.getElementById("readme").textContent = testo;
       });
 
-    // 2. Genera indice e tabelle
-    const wrapper = document.getElementById('tables-wrapper');
-    const navLinks = document.getElementById('navLinks');
+    // 2. Carica e disegna ogni CSV
+    const contenitore = document.getElementById("contenuto");
 
-    csvFiles.forEach((filename, index) => {
-      // Trasforma "01_Anagrafica_Commesse.csv" in "01. Anagrafica Commesse"
-      const cleanTitle = filename
-        .replace(/\.csv$/i, '')
-        .replace(/^(\d+)_/, '$1. ')
-        .replace(/_/g, ' ');
+    files.forEach(nomeFile => {
+      const titolo = document.createElement("h2");
+      titolo.textContent = nomeFile;
+      contenitore.appendChild(titolo);
 
-      const sectionId = 'table-' + index;
+      const box = document.createElement("div");
+      box.className = "box";
+      box.textContent = "Caricamento...";
+      contenitore.appendChild(box);
 
-      // Aggiunge voce all'indice in alto
-      const link = document.createElement('a');
-      link.href = '#' + sectionId;
-      link.textContent = cleanTitle;
-      navLinks.appendChild(link);
+      fetch(nomeFile)
+        .then(r => {
+          if (!r.ok) throw new Error("File non trovato (" + r.status + ")");
+          return r.arrayBuffer();
+        })
+        .then(buffer => {
+          // Decodifica formato Windows/Excel italiano
+          const decoder = new TextDecoder("windows-1252");
+          const testo = decoder.decode(buffer);
+          const righe = testo.split(/\r?\n/).filter(r => r.trim() !== "");
 
-      // Intestazione sezione con titolo e tasto download
-      const header = document.createElement('div');
-      header.className = 'section-header';
-      header.id = sectionId;
-
-      const title = document.createElement('h2');
-      title.textContent = cleanTitle;
-      header.appendChild(title);
-
-      const dlBtn = document.createElement('a');
-      dlBtn.className = 'download-btn';
-      dlBtn.href = encodeURI(filename);
-      dlBtn.download = filename;
-      dlBtn.textContent = 'Scarica CSV';
-      header.appendChild(dlBtn);
-
-      wrapper.appendChild(header);
-
-      // Contenitore tabella
-      const container = document.createElement('div');
-      container.className = 'table-container';
-      const table = document.createElement('table');
-      container.appendChild(table);
-      wrapper.appendChild(container);
-
-      // Lettura CSV (delimitato da punto e virgola di Excel)
-      Papa.parse(encodeURI(filename), {
-        download: true,
-        header: true,
-        delimiter: ";",
-        encoding: "ISO-8859-1",
-        skipEmptyLines: true,
-        error: function() {
-          container.innerHTML = '<p class="error">Impossibile caricare "' + filename + '". Verifica che sia nella stessa cartella di index.html.</p>';
-        },
-        complete: function(results) {
-          if (!results.data || results.data.length === 0) {
-            container.innerHTML = '<p style="padding:1rem;">Nessun dato trovato nel file.</p>';
+          if (righe.length === 0) {
+            box.textContent = "File vuoto.";
             return;
           }
 
-          const firstRow = results.data.at(0);
-          const headers = Object.keys(firstRow);
+          // Riconosce automaticamente se il separatore è ; oppure ,
+          const primaRiga = righe.at(0);
+          const sep = primaRiga.includes(";") ? ";" : ",";
 
-          const thead = table.createTHead();
-          const headerRow = thead.insertRow();
-          headers.forEach(h => {
-            const th = document.createElement('th');
-            th.textContent = h;
-            headerRow.appendChild(th);
-          });
-
-          const tbody = table.createTBody();
-          results.data.forEach(row => {
-            const tr = tbody.insertRow();
-            headers.forEach(h => {
-              const td = tr.insertCell();
-              td.textContent = row[h] !== undefined ? row[h] : '';
+          const table = document.createElement("table");
+          
+          righe.forEach((riga, indiceRiga) => {
+            const tr = document.createElement("tr");
+            const celle = riga.split(sep);
+            
+            celle.forEach(valore => {
+              const cella = document.createElement(indiceRiga === 0 ? "th" : "td");
+              cella.textContent = valore.replace(/^"|"$/g, "").trim();
+              tr.appendChild(cella);
             });
+            
+            table.appendChild(tr);
           });
-        }
-      });
+
+          box.textContent = "";
+          box.appendChild(table);
+        })
+        .catch(err => {
+          box.textContent = "Errore nel caricamento di " + nomeFile + ": " + err.message;
+        });
     });
   </script>
 </body>
