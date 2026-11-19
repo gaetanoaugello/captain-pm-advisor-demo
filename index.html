@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>I miei dati CSV</title>
+  <!-- Librerie leggere per leggere CSV e Markdown -->
+  <script src="https://cloudflare.com"></script>
+  <script src="https://jsdelivr.net"></script>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 1000px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+    select { padding: 8px; font-size: 16px; margin-bottom: 1rem; }
+    table { border-collapse: collapse; width: 100%; margin-top: 1rem; font-size: 14px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background-color: #f4f4f4; position: sticky; top: 0; }
+    tr:nth-child(even) { background-color: #fafafa; }
+    .table-container { overflow-x: auto; max-height: 600px; border: 1px solid #ddd; }
+    #readme { background: #f9f9f9; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; }
+  </style>
+</head>
+<body>
+
+  <!-- Qui viene mostrato il contenuto del README.md -->
+  <div id="readme">Caricamento descrizione...</div>
+
+  <h2>Esplora i dataset</h2>
+  <label for="csvSelect">Scegli un file: </label>
+  <select id="csvSelect"></select>
+
+  <div class="table-container">
+    <table id="dataTable"></table>
+  </div>
+
+  <script>
+    // INSERISCI QUI I NOMI ESATTI DEI TUOI 6 FILE CSV
+    const files = [
+      "01_Anagrafica_Commesse.csv",
+      "02_Piano_Economico_Mensile.csv",
+      "03_Consuntivi_Mensili.csv",
+      "04_Anagrafica_Risorse.csv",
+      "05_Allocazione_Risorse.csv",
+      "06_Rischi_CR.csv"
+    ];
+
+    // 1. Carica e mostra il README.md
+    fetch('README.md')
+      .then(res => res.text())
+      .then(md => document.getElementById('readme').innerHTML = marked.parse(md))
+      .catch(() => document.getElementById('readme').style.display = 'none');
+
+    // 2. Popola il menu a tendina con i 6 CSV
+    const select = document.getElementById('csvSelect');
+    files.forEach(file => {
+      const option = document.createElement('option');
+      option.value = file;
+      option.textContent = file;
+      select.appendChild(option);
+    });
+
+    // 3. Funzione per leggere il CSV e disegnare la tabella
+    function loadCSV(filename) {
+      Papa.parse(filename, {
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+        complete: function(results) {
+          const table = document.getElementById('dataTable');
+          table.innerHTML = '';
+          if (!results.data.length) return;
+
+          // Intestazioni
+          const headers = Object.keys(results.data[0]);
+          const thead = table.createTHead();
+          const headerRow = thead.insertRow();
+          headers.forEach(h => {
+            const th = document.createElement('th');
+            th.textContent = h;
+            headerRow.appendChild(th);
+          });
+
+          // Righe dei dati
+          const tbody = table.createTBody();
+          results.data.forEach(row => {
+            const tr = tbody.insertRow();
+            headers.forEach(h => {
+              const td = tr.insertCell();
+              td.textContent = row[h];
+            });
+          });
+        }
+      });
+    }
+
+    select.addEventListener('change', (e) => loadCSV(e.target.value));
+    loadCSV(files[0]); // Carica il primo file all'apertura
+  </script>
+</body>
+</html>
