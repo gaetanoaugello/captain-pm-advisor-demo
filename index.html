@@ -1,0 +1,64 @@
+  <script>
+    // INSERISCI QUI I NOMI ESATTI DEI TUOI 6 FILE CSV
+    const files = [
+      "file1.csv",
+      "file2.csv",
+      "file3.csv",
+      "file4.csv",
+      "file5.csv",
+      "file6.csv"
+    ];
+
+    // 1. Carica e mostra il README.md
+    fetch('README.md')
+      .then(res => res.text())
+      .then(md => document.getElementById('readme').innerHTML = marked.parse(md))
+      .catch(() => document.getElementById('readme').style.display = 'none');
+
+    // 2. Popola il menu a tendina con i 6 CSV
+    const select = document.getElementById('csvSelect');
+    files.forEach(file => {
+      const option = document.createElement('option');
+      option.value = file;
+      option.textContent = file;
+      select.appendChild(option);
+    });
+
+    // 3. Funzione per leggere il CSV (con punto e virgola) e disegnare la tabella
+    function loadCSV(filename) {
+      Papa.parse(filename, {
+        download: true,
+        header: true,
+        delimiter: ";",
+        skipEmptyLines: true,
+        complete: function(results) {
+          const table = document.getElementById('dataTable');
+          table.innerHTML = '';
+          if (!results.data || results.data.length === 0) return;
+
+          // Intestazioni (prende le chiavi dalla prima riga)
+          const headers = Object.keys(results.data[0]);
+          const thead = table.createTHead();
+          const headerRow = thead.insertRow();
+          headers.forEach(h => {
+            const th = document.createElement('th');
+            th.textContent = h;
+            headerRow.appendChild(th);
+          });
+
+          // Righe dei dati
+          const tbody = table.createTBody();
+          results.data.forEach(row => {
+            const tr = tbody.insertRow();
+            headers.forEach(h => {
+              const td = tr.insertCell();
+              td.textContent = row[h];
+            });
+          });
+        }
+      });
+    }
+
+    select.addEventListener('change', (e) => loadCSV(e.target.value));
+    loadCSV(files[0]); // Carica il primo file [0] all'apertura
+  </script>
